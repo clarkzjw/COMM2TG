@@ -1,4 +1,4 @@
-# VoiceOfHangzhou
+# COMM2TG
 
 A bot that catches Ingress comm messages and forwardes them to Telegram channel.
 
@@ -22,7 +22,7 @@ sudo pip3 install selenium
 
 + Make sure your OS support coresponding locales based on your comm range.
 
-e.g. zh_CN.UTF-8
+  e.g. zh_CN.UTF-8
 
 ```bash
 sudo locale-gen zh_CN.UTF-8
@@ -31,7 +31,7 @@ sudo dpkg-reconfigure locales
 
 + Copy `config.json.example` to `config.json` first, and remember to modify `config.json` and `PhantomjsPath` in `bot.py`
 
-To run, just type
+  To run, just type
 
 ```bash
 python3 bot.py
