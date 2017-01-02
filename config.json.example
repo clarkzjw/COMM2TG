@@ -1,0 +1,6 @@
+{
+	"Email": "Your Ingress Account Email",
+	"Passwd": "Your Ingress Account Password",
+	"BOT_TOKEN": "Your Telegram Bot Token",
+	"CHANNEL_NAME": "Your Channel ID"
+}
