@@ -5,12 +5,11 @@ import re
 import time
 import json
 import logging
-import platform
 import urllib
 from selenium import webdriver
 
 import telegram
-from telegram.error import NetworkError, Unauthorized
+from telegram.error import NetworkError
 from pymongo import MongoClient
 
 import ingrex
@@ -22,6 +21,11 @@ CHANNEL_NAME = ''
 Email = ''
 Passwd = ''
 PhantomjsPath = ''
+DBName = ''
+DBUser = ''
+DBPass = ''
+DBHost = ''
+BlockList = ''
 
 LOG_FILENAME = 'voh.log'
 logging.basicConfig(level = logging.DEBUG,
@@ -36,11 +40,14 @@ console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 
+
 class CookieException(Exception):
     ''' CookieError '''
 
+
 def getTime():
     return time.strftime('%x %X %Z')
+
 
 def readConfig():
     global Email
@@ -48,6 +55,11 @@ def readConfig():
     global BOT_TOKEN
     global CHANNEL_NAME
     global PhantomjsPath
+    global DBName
+    global DBUser
+    global DBPass
+    global DBHost
+    global BlockList
 
     configfile = open("./config.json")
     config = json.load(configfile)
@@ -55,14 +67,15 @@ def readConfig():
     Passwd = config["Passwd"]
     BOT_TOKEN = config["BOT_TOKEN"]
     CHANNEL_NAME = config["CHANNEL_NAME"]
+    PhantomjsPath = config["PhantomjsPath"]
+    DBName = config["DBName"]
+    DBUser = config["DBUser"]
+    DBPass = config["DBPass"]
+    DBHost = config["DBHost"]
+    BlockList = config["BlockList"]
 
-    osname = platform.system()
-    if osname == "Windows":
-        PhantomjsPath = 'C:\\Users\\LuciaHydrion\\AppData\\Roaming\\npm\\phantomjs.cmd'
-    elif osname == "Linux":
-        PhantomjsPath = '/home/clarkzjw/code/phantomjs-2.1.1-linux-i686/bin/phantomjs'
-        os.environ['TZ'] = 'Asia/Shanghai'
-        time.tzset()
+    os.environ['TZ'] = 'Asia/Shanghai'
+    time.tzset()
 
 def fetchCookie():
     global Debug
@@ -119,6 +132,7 @@ def fetchCookie():
     logger.info(getTime() + ': Fetching Cookie Succeed')
     return True
 
+
 def sendMessge(bot, msg):
     "sendMsg"
 
@@ -136,11 +150,11 @@ def sendMessge(bot, msg):
             resp = urllib.request.urlopen(req)
             data = resp.read()
 
-            #bot.sendMessage(chat_id=CHANNEL_NAME, text=msg)
             logger.info(getTime() + ": sendMsg " + msg)
             break
         except NetworkError:
             time.sleep(1)
+
 
 def sendMonitor(bot, msg):
     logger = logging.getLogger('sendMonitor')
@@ -152,8 +166,9 @@ def sendMonitor(bot, msg):
         except NetworkError:
             time.sleep(1)
 
+
 def formatMessage(raw):
-    pattern = re.compile('xmps.biz|enl.sh|ingressfarm.com|Polygon')
+    pattern = re.compile(BlockList)
     match = pattern.search(str(raw))
     if match:
         return "Blocked"
@@ -161,7 +176,7 @@ def formatMessage(raw):
     msg = ''
     plext = raw[2]['plext']
     markup = plext['markup']
-    plaintext = plext['text']
+    #plaintext = plext['text']
 
     for mark in markup:
         if mark[0] == 'SECURE':
@@ -204,14 +219,28 @@ def formatMessage(raw):
 
     return msg
 
-def insertDB(time, msg):
-    logger = logging.getLogger('insertDB')
-    Conn = MongoClient()
-    database = Conn['COMM_Hangzhou']
+def FindRecord(id):
+    uri = 'mongodb://' + DBHost
+    Conn = MongoClient(uri)
+    Conn.api.authenticate(DBUser, DBPass, DBName)
+    database = Conn[DBName]
     mycollection = database.entries
-    post = {"time": time, "msg": msg}
-    mycollection.insert(post)
+    res = mycollection.find({"id": id})
+    if res.count() == 0:
+        return False
+    else:
+        return True
 
+
+def insertDB(time, id, msg):
+    uri = 'mongodb://' + DBHost
+    Conn = MongoClient(uri)
+    Conn.api.authenticate(DBUser, DBPass, DBName)
+    database = Conn[DBName]
+    mycollection = database.entries
+    post = {"id": id, "time": time, "msg": msg}
+    mycollection.insert(post)
+    Conn.close()
 
 def main():
     logger = logging.getLogger('main')
@@ -230,7 +259,7 @@ def main():
 
     while True:
         try:
-            if fetchCookie():
+           if fetchCookie():
                 break
         except CookieException:
             time.sleep(3)
@@ -253,7 +282,8 @@ def main():
                 if result:
                     mints = result[0][1] + 1
                     break
-            except CookieError:
+
+            except CookieException:
                 while True:
                     try:
                         if fetchCookie():
@@ -263,6 +293,7 @@ def main():
 
         for item in result[::-1]:
             message = ingrex.Message(item)
+
             if message.ptype == 'PLAYER_GENERATED':
                 logger.info(getTime() + str(item))
 
@@ -272,11 +303,12 @@ def main():
                 else:
                     msg = message.time + " " + msg
                     logger.info(getTime() + " " + msg)
-                    insertDB(message.time, msg)
-                    sendMonitor(bot, msg)
-                    #sendMessge(bot, msg)
+                    if FindRecord(message.guid) == False:
+                        insertDB(message.time, message.guid, msg)
+                        sendMonitor(bot, msg)
+                        #sendMessge(bot, msg)
 
-        time.sleep(10)
+        time.sleep(5)
 
 if __name__ == '__main__':
     readConfig()
