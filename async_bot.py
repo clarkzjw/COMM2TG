@@ -142,7 +142,7 @@ def send_message(bot, message, monitor=False):
             logger.error(get_time() + ": Send Message to Channel Failed")
             time.sleep(1)
         except Exception:
-            logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
+            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
             time.sleep(1)
 
 
@@ -196,7 +196,7 @@ def main():
             logger.error(get_time() + ': Fetch Cookie Failed')
             time.sleep(3)
         except Exception:
-            logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
+            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
             time.sleep(3)
 
     # fetch message
@@ -224,7 +224,7 @@ def main():
                     except CookieException:
                         time.sleep(3)
             except Exception:
-                logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
+                logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
                 time.sleep(3)
 
         for item in result[::-1]:
@@ -236,10 +236,10 @@ def main():
 
             message = ingrex.Message(item)
             if message.ptype == 'PLAYER_GENERATED':
-                logger.info(get_time() + " " + message)
+                logger.info(get_time() + " " + message.msg)
                 if find_message_record(message.guid) is False:
-                    insert_message_to_database(message.time, message.guid, message)
-                    send_message(bot, message, False)
+                    insert_message_to_database(message.time, message.guid, message.msg)
+                    send_message(bot, message.msg, False)
 
         time.sleep(10)
 
@@ -251,5 +251,5 @@ if __name__ == '__main__':
         try:
             main()
         except Exception:
-            send_message(bot, 'Main Unexpected error' + sys.exc_info()[0], True)
+            send_message(bot, 'Main Unexpected error' + str(sys.exc_info()[0]), True)
             time.sleep(3)
