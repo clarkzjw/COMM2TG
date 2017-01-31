@@ -20,7 +20,7 @@ BOT_TOKEN = ''
 CHANNEL_NAME = ''
 Email = ''
 Passwd = ''
-PhantomjsPath = ''
+PhantomJSPath = ''
 DBName = ''
 DBUser = ''
 DBPass = ''
@@ -54,7 +54,7 @@ def readConfig():
     global Passwd
     global BOT_TOKEN
     global CHANNEL_NAME
-    global PhantomjsPath
+    global PhantomJSPath
     global DBName
     global DBUser
     global DBPass
@@ -82,7 +82,7 @@ def fetchCookie():
     global Debug
     global Email
     global Passwd
-    global PhantomjsPath
+    global PhantomJSPath
 
     logger = logging.getLogger('fetchCookie')
     logger.info(getTime() + ': Fetching Cookie...')

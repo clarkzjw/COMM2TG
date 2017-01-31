@@ -6,60 +6,53 @@ import time
 import json
 import logging
 import urllib
+import sys
 from selenium import webdriver
 
 import telegram
-from telegram.error import NetworkError
 from pymongo import MongoClient
 
 import ingrex
 
-Debug = True
+import aiohttp
+import asyncio
+import async_timeout
+
 bot = None
 BOT_TOKEN = ''
 CHANNEL_NAME = ''
 Email = ''
 Passwd = ''
-PhantomjsPath = ''
+PhantomJSPath = ''
 DBName = ''
 DBUser = ''
 DBPass = ''
 DBHost = ''
 BlockList = ''
-
 LOG_FILENAME = 'voh.log'
-logging.basicConfig(level=logging.DEBUG,
-                    filename=LOG_FILENAME,
-                    filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-# set a format which is simpler for console use
-formatter = logging.Formatter('%(name)-8s: %(levelname)-4s %(message)s')
-# tell the handler to use this format
-console.setFormatter(formatter)
-# add the handler to the root logger
-logging.getLogger('').addHandler(console)
+TIME_ZONE='Asia/Shanghai'
 
 
 class CookieException(Exception):
-    ''' CookieError '''
+    pass
 
 
-def getTime():
+def get_time():
     return time.strftime('%x %X %Z')
 
 
-def readConfig():
+def read_config():
     global Email
     global Passwd
     global BOT_TOKEN
     global CHANNEL_NAME
-    global PhantomjsPath
+    global PhantomJSPath
     global DBName
     global DBUser
     global DBPass
     global DBHost
     global BlockList
+    global LOG_FILENAME
 
     configfile = open("./config.json")
     config = json.load(configfile)
@@ -67,186 +60,121 @@ def readConfig():
     Passwd = config["Passwd"]
     BOT_TOKEN = config["BOT_TOKEN"]
     CHANNEL_NAME = config["CHANNEL_NAME"]
-    PhantomjsPath = config["PhantomjsPath"]
+    PhantomJSPath = config["PhantomJSPath"]
     DBName = config["DBName"]
     DBUser = config["DBUser"]
     DBPass = config["DBPass"]
     DBHost = config["DBHost"]
     BlockList = config["BlockList"]
 
-    os.environ['TZ'] = 'Asia/Shanghai'
+    os.environ['TZ'] = TIME_ZONE
     time.tzset()
 
+    logging.basicConfig(level=logging.DEBUG,
+                        filename=LOG_FILENAME,
+                        filemode='w')
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(name)-8s: %(levelname)-4s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
 
-def fetchCookie():
-    global Debug
-    global Email
-    global Passwd
-    global PhantomjsPath
 
-    logger = logging.getLogger('fetchCookie')
-    logger.info(getTime() + ': Fetching Cookie...')
+def fetch_cookie():
+    logger = logging.getLogger('fetch_cookie')
+    logger.info(get_time() + ': Fetching Cookie...')
 
-    driver = webdriver.PhantomJS(PhantomjsPath)
+    driver = webdriver.PhantomJS(PhantomJSPath)
     driver.get('https://www.ingress.com/intel')
 
     # get login page
     link = driver.find_elements_by_tag_name('a')[0].get_attribute('href')
     driver.get(link)
-    if Debug:
-        driver.get_screenshot_as_file('1.png')
+    driver.get_screenshot_as_file('1.png')
+
     # simulate manual login
     driver.set_page_load_timeout(10)
     driver.set_script_timeout(20)
     driver.find_element_by_id('Email').send_keys(Email)
-    if Debug:
-        driver.get_screenshot_as_file('2.png')
+    driver.get_screenshot_as_file('2.png')
     driver.find_element_by_css_selector('#next').click()
     time.sleep(3)
     driver.find_element_by_id('Passwd').send_keys(Passwd)
-    if Debug:
-        driver.get_screenshot_as_file('3.png')
+    driver.get_screenshot_as_file('3.png')
     driver.find_element_by_css_selector('#signIn').click()
     time.sleep(3)
-    if Debug:
-        driver.get_screenshot_as_file('3.png')
+    driver.get_screenshot_as_file('4.png')
+
     # get cookies
-    temp = driver.get_cookies()
+    cookies = driver.get_cookies()
 
     csrftoken = ''
     SACSID = ''
-    for a in temp:
-        if (a['name'] == 'csrftoken'):
-            csrftoken = a['value']
-        if (a['name'] == 'SACSID'):
-            SACSID = a['value']
+    for key in cookies:
+        if key['name'] == 'csrftoken':
+            csrftoken = key['value']
+        if key['name'] == 'SACSID':
+            SACSID = key['value']
 
     if csrftoken == '' or SACSID == '':
-        logger.error(getTime() + ': Fetch Cookie Failed')
         raise CookieException
 
     with open('cookie', 'w') as file:
         cookie = 'SACSID='+SACSID+'; csrftoken='+csrftoken+'; ingress.intelmap.shflt=viz; ingress.intelmap.lat=29.098418372855484; ingress.intelmap.lng=119.81689453125; ingress.intelmap.zoom=17'
         file.write(cookie)
 
+    logger.info(get_time() + ': Fetching Cookie Succeed')
     driver.quit()
-    logger.info(getTime() + ': Fetching Cookie Succeed')
     return True
 
 
-def sendMessge(bot, msg):
-    "sendMsg"
-
-    logger = logging.getLogger('sendMessage')
+def send_message(bot, message, monitor=False):
+    logger = logging.getLogger('send_message')
     while True:
         try:
-            url = 'https://api.telegram.org/bot'
-            url += BOT_TOKEN
-            url += '/sendMessage?chat_id='
-            url += CHANNEL_NAME
-            url += '&text='
-            url += urllib.parse.quote(msg)
-
-            req = urllib.request.Request(url, headers={'Content-Type': 'application/x-www-form-urlencoded'})
-            resp = urllib.request.urlopen(req)
-            data = resp.read()
-            logger.info(data)
-            logger.info(getTime() + ": sendMsg " + msg)
+            if monitor is True:
+                bot.sendMessage(chat_id="@voamonitor", text=message)
+            else:
+                bot.sendMessage(chat_id=CHANNEL_NAME, text=urllib.parse.quote(message))
+            logger.info(get_time() + ": sendMsg " + message)
             break
-        except NetworkError:
+        except telegram.TelegramError:
+            logger.error(get_time() + ": Send Message to Channel Failed")
+            time.sleep(1)
+        except Exception:
+            logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
             time.sleep(1)
 
 
-def sendMonitor(bot, msg):
-    logger = logging.getLogger('sendMonitor')
-    while True:
-        try:
-            bot.sendMessage(chat_id="@voamonitor", text=msg)
-            logger.info(getTime() + ": sendMsg " + msg)
-            break
-        except NetworkError:
-            time.sleep(1)
-
-
-def formatMessage(raw):
-    pattern = re.compile(BlockList)
-    match = pattern.search(str(raw))
-    if match:
-        return "Blocked"
-
-    msg = ''
-    plext = raw[2]['plext']
-    markup = plext['markup']
-
-    for mark in markup:
-        if mark[0] == 'SECURE':
-            msg += mark[1]['plain']
-        elif mark[0] == 'SENDER':
-            player = mark[1]['plain']
-            team = mark[1]['team']
-
-            pattern = re.compile(':')
-            match = pattern.search(player)
-            if match:
-                if team == 'RESISTANCE':
-                    player = player[:match.span()[0]] + ' 🐳' + player[match.span()[0]:]
-                elif team == 'ENLIGHTENED':
-                    player = player[:match.span()[0]] + ' 🐸' + player[match.span()[0]:]
-            msg += player
-
-        elif mark[0] == 'PLAYER' or mark[0] == 'AT_PLAYER':
-            player = mark[1]['plain']
-            team = mark[1]['team']
-
-            msg += player
-            if team == 'RESISTANCE':
-                msg += ' 🐳'
-            elif team == 'ENLIGHTENED':
-                msg += ' 🐸'
-
-        elif mark[0] == 'TEXT':
-            msg += mark[1]['plain']
-
-    pattern = re.compile('\[secure\]')
-    match = pattern.search(msg)
-    if match:
-        if msg.find(':') != -1:
-            msg = msg[:9] + '@' + msg[9:]
-        else:
-            msg = msg[:10] + '@' + msg[10:]
-    else:
-        msg = '@' + msg
-
-    return msg
-
-
-def FindRecord(id):
+def find_message_record(id):
     uri = 'mongodb://' + DBHost
-    Conn = MongoClient(uri)
-    Conn.api.authenticate(DBUser, DBPass, DBName)
-    database = Conn[DBName]
-    mycollection = database.entries
-    res = mycollection.find({"id": id})
-    if res.count() == 0:
+    conn = MongoClient(uri)
+    conn.api.authenticate(DBUser, DBPass, DBName)
+    database = conn[DBName]
+    collection = database.entries
+    count = collection.find({"id": id}).count()
+    conn.close()
+    if count == 0:
         return False
     else:
         return True
 
 
-def insertDB(time, id, msg):
+def insert_message_to_database(time, id, msg):
     uri = 'mongodb://' + DBHost
-    Conn = MongoClient(uri)
-    Conn.api.authenticate(DBUser, DBPass, DBName)
-    database = Conn[DBName]
-    mycollection = database.entries
+    conn = MongoClient(uri)
+    conn.api.authenticate(DBUser, DBPass, DBName)
+    database = conn[DBName]
+    collection = database.entries
     post = {"id": id, "time": time, "msg": msg}
-    mycollection.insert(post)
-    Conn.close()
+    collection.insert(post)
+    conn.close()
 
 
 def main():
     logger = logging.getLogger('main')
 
+    # Lat Lng of Hangzhou
     field = {
         'minLngE6': 119618783,
         'minLatE6': 29912919,
@@ -255,71 +183,73 @@ def main():
     }
 
     mints = -1
-    maxts=-1
-    reverse=False
-    tab='all'
+    maxts = -1
+    reverse = False
+    tab = 'all'
 
+    # fetch cookie
     while True:
         try:
-            if fetchCookie():
+            if fetch_cookie():
                 break
         except CookieException:
+            logger.error(get_time() + ': Fetch Cookie Failed')
+            time.sleep(3)
+        except Exception:
+            logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
             time.sleep(3)
 
+    # fetch message
     count = 0
     while True:
         count += 1
 
         with open('cookie') as cookies:
             cookies = cookies.read().strip()
+        logger.info(get_time() + ": {} Fetching from Intel...".format(str(count)))
 
-        logger.info(getTime() + ": {} Fetching from Intel...".format(str(count)))
-
+        # fetch message per time
         while True:
             try:
-
                 intel = ingrex.Intel(cookies, field)
                 result = intel.fetch_msg(mints, maxts, reverse, tab)
-
                 if result:
                     mints = result[0][1] + 1
                     break
-
             except CookieException:
                 while True:
                     try:
-                        if fetchCookie():
+                        if fetch_cookie():
                             break
                     except CookieException:
                         time.sleep(3)
             except Exception:
-                pass
+                logger.error(get_time() + ": Unexpected error: " + sys.exc_info()[0])
+                time.sleep(3)
 
         for item in result[::-1]:
+            # Check spam message
+            pattern = re.compile(BlockList)
+            match = pattern.search(str(item))
+            if match:
+                continue
+
             message = ingrex.Message(item)
-
             if message.ptype == 'PLAYER_GENERATED':
-                # logger.info(getTime() + str(item))
-
-                msg = formatMessage(item)
-                if msg == 'Blocked':
-                    logger.info(getTime() + " " + message.text)
-                else:
-                    msg = message.time + " " + msg
-                    # logger.info(getTime() + " " + msg)
-                    if FindRecord(message.guid) is False:
-                        insertDB(message.time, message.guid, msg)
-                        # sendMonitor(bot, msg)
-                        sendMessge(bot, msg)
+                logger.info(get_time() + " " + message)
+                if find_message_record(message.guid) is False:
+                    insert_message_to_database(message.time, message.guid, message)
+                    send_message(bot, message, False)
 
         time.sleep(10)
 
 if __name__ == '__main__':
-    readConfig()
+    read_config()
     bot = telegram.Bot(BOT_TOKEN)
 
     while True:
         try:
             main()
         except Exception:
-            sendMonitor(bot, 'Main Error')
+            send_message(bot, 'Main Unexpected error' + sys.exc_info()[0], True)
+            time.sleep(3)
