@@ -8,5 +8,9 @@
     "DBUser": "",
     "DBPass": "",
     "DBHost": "ip:port",
-    "BlockList": ""
+    "BlockList": "",
+    "minLngE6": 119618783,
+    "minLatE6": 29912919,
+    "maxLngE6": 121018722,
+    "maxLatE6": 30573739
 }

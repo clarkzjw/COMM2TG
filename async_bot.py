@@ -5,7 +5,7 @@ import re
 import time
 import json
 import logging
-import urllib
+import inspect
 import sys
 from selenium import webdriver
 
@@ -31,7 +31,10 @@ DBHost = ''
 BlockList = ''
 LOG_FILENAME = 'voh.log'
 TIME_ZONE='Asia/Shanghai'
-
+minLngE6 = 0
+minLatE6 = 0
+maxLngE6 = 0
+maxLatE6 = 0
 
 class CookieException(Exception):
     pass
@@ -53,6 +56,10 @@ def read_config():
     global DBHost
     global BlockList
     global LOG_FILENAME
+    global minLngE6
+    global minLatE6
+    global maxLngE6
+    global maxLatE6
 
     configfile = open("./config.json")
     config = json.load(configfile)
@@ -66,12 +73,17 @@ def read_config():
     DBPass = config["DBPass"]
     DBHost = config["DBHost"]
     BlockList = config["BlockList"]
+    minLngE6 = config["minLngE6"]
+    minLatE6 = config["minLatE6"]
+    maxLngE6 = config["maxLngE6"]
+    maxLatE6 = config["maxLatE6"]
 
     os.environ['TZ'] = TIME_ZONE
     time.tzset()
 
     logging.basicConfig(level=logging.DEBUG,
                         filename=LOG_FILENAME,
+                        encoding='utf8',
                         filemode='w')
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
@@ -142,7 +154,7 @@ def send_message(bot, message, monitor=False):
             logger.error(get_time() + ": Send Message to Channel Failed")
             time.sleep(1)
         except Exception:
-            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
+            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
             time.sleep(1)
 
 
@@ -174,12 +186,12 @@ def insert_message_to_database(time, id, msg):
 def main():
     logger = logging.getLogger('main')
 
-    # Lat Lng of Hangzhou
+    # Lat & Lng of fetch region
     field = {
-        'minLngE6': 119618783,
-        'minLatE6': 29912919,
-        'maxLngE6': 121018722,
-        'maxLatE6': 30573739,
+        'minLngE6': minLngE6,
+        'minLatE6': minLatE6,
+        'maxLngE6': maxLngE6,
+        'maxLatE6': maxLatE6,
     }
 
     mints = -1
@@ -196,7 +208,7 @@ def main():
             logger.error(get_time() + ': Fetch Cookie Failed')
             time.sleep(3)
         except Exception:
-            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
+            logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
             time.sleep(3)
 
     # fetch message
@@ -224,7 +236,7 @@ def main():
                     except CookieException:
                         time.sleep(3)
             except Exception:
-                logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]))
+                logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
                 time.sleep(3)
 
         for item in result[::-1]:
@@ -251,5 +263,5 @@ if __name__ == '__main__':
         try:
             main()
         except Exception:
-            send_message(bot, 'Main Unexpected error' + str(sys.exc_info()[0]), True)
+            send_message(bot, 'Main Unexpected error' + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno), True)
             time.sleep(3)
