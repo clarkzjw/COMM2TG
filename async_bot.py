@@ -6,6 +6,7 @@ import time
 import json
 import logging
 import inspect
+import urllib
 import sys
 from selenium import webdriver
 
@@ -36,7 +37,9 @@ minLatE6 = 0
 maxLngE6 = 0
 maxLatE6 = 0
 
+
 class CookieException(Exception):
+    """Intel Error"""
     pass
 
 
@@ -83,7 +86,6 @@ def read_config():
 
     logging.basicConfig(level=logging.DEBUG,
                         filename=LOG_FILENAME,
-                        encoding='utf8',
                         filemode='w')
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
@@ -147,6 +149,7 @@ def send_message(bot, message, monitor=False):
             if monitor is True:
                 bot.sendMessage(chat_id="@voamonitor", text=message)
             else:
+                print(type(message))
                 bot.sendMessage(chat_id=CHANNEL_NAME, text=message)
             logger.info(get_time() + ": sendMsg " + message)
             break
@@ -184,6 +187,7 @@ def insert_message_to_database(time, id, msg):
 
 
 def main():
+    # global intel
     logger = logging.getLogger('main')
 
     # Lat & Lng of fetch region
@@ -211,15 +215,16 @@ def main():
             logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
             time.sleep(3)
 
+
     # fetch message
     count = 0
     while True:
         count += 1
+        logger.info(get_time() + ": {} Fetching from Intel...".format(str(count)))
 
         with open('cookie') as cookies:
             cookies = cookies.read().strip()
-        logger.info(get_time() + ": {} Fetching from Intel...".format(str(count)))
-
+            
         # fetch message per time
         while True:
             try:
@@ -228,13 +233,6 @@ def main():
                 if result:
                     mints = result[0][1] + 1
                     break
-            except CookieException:
-                while True:
-                    try:
-                        if fetch_cookie():
-                            break
-                    except CookieException:
-                        time.sleep(3)
             except Exception:
                 logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
                 time.sleep(3)
@@ -248,7 +246,6 @@ def main():
 
             message = ingrex.Message(item)
             if message.ptype == 'PLAYER_GENERATED':
-                logger.info(get_time() + " " + message.msg)
                 if find_message_record(message.guid) is False:
                     insert_message_to_database(message.time, message.guid, message.msg)
                     send_message(bot, message.msg, False)

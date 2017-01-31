@@ -43,14 +43,14 @@ class Intel(object):
         count = 0
         while count < 3:
             try:
-                request = self.session.post(url, data=json.dumps(payload), headers=self.headers, timeout=600)
+                request = self.session.post(url, data=json.dumps(payload), headers=self.headers, timeout=(10, 60))
                 return request.json()['result']
             except requests.ConnectionError:
-                raise IntelError
+                raise IntelException
             except Exception:
                 count += 1
                 continue
-        raise CookieError
+        raise CookieException
 
     def fetch_msg(self, mints=-1, maxts=-1, reverse=False, tab='all'):
         "fetch message from Ingress COMM, tab can be 'all', 'faction', 'alerts'"
@@ -133,12 +133,12 @@ class Intel(object):
         return self.fetch(url, payload)
 
 
-class IntelError(BaseException):
+class IntelException(BaseException):
     """Intel Error"""
     pass
 
 
-class CookieError(IntelError):
+class CookieException(IntelException):
     """Intel Error"""
     pass
 
