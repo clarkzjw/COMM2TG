@@ -31,7 +31,10 @@ DBHost = ''
 BlockList = ''
 LOG_FILENAME = 'voh.log'
 TIME_ZONE='Asia/Shanghai'
-
+minLngE6 = 0
+minLatE6 = 0
+maxLngE6 = 0
+maxLatE6 = 0
 
 class CookieException(Exception):
     pass
@@ -53,6 +56,10 @@ def read_config():
     global DBHost
     global BlockList
     global LOG_FILENAME
+    global minLngE6
+    global minLatE6
+    global maxLngE6
+    global maxLatE6
 
     configfile = open("./config.json")
     config = json.load(configfile)
@@ -66,6 +73,10 @@ def read_config():
     DBPass = config["DBPass"]
     DBHost = config["DBHost"]
     BlockList = config["BlockList"]
+    minLngE6 = config["minLngE6"]
+    minLatE6 = config["minLatE6"]
+    maxLngE6 = config["maxLngE6"]
+    maxLatE6 = config["maxLatE6"]
 
     os.environ['TZ'] = TIME_ZONE
     time.tzset()
@@ -174,12 +185,12 @@ def insert_message_to_database(time, id, msg):
 def main():
     logger = logging.getLogger('main')
 
-    # Lat Lng of Hangzhou
+    # Lat & Lng of fetch region
     field = {
-        'minLngE6': 119618783,
-        'minLatE6': 29912919,
-        'maxLngE6': 121018722,
-        'maxLatE6': 30573739,
+        'minLngE6': minLngE6,
+        'minLatE6': minLatE6,
+        'maxLngE6': maxLngE6,
+        'maxLatE6': maxLatE6,
     }
 
     mints = -1
