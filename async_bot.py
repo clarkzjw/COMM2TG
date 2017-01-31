@@ -219,6 +219,9 @@ def main():
             cookies = cookies.read().strip()
         logger.info(get_time() + ": {} Fetching from Intel...".format(str(count)))
 
+        with open('cookie') as cookies:
+            cookies = cookies.read().strip()
+
         # fetch message per time
         while True:
             try:
