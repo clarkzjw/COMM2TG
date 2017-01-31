@@ -43,7 +43,7 @@ class Intel(object):
         count = 0
         while count < 3:
             try:
-                request = self.session.post(url, data=json.dumps(payload), headers=self.headers, timeout=(10, 60))
+                request = self.session.post(url, data=json.dumps(payload), headers=self.headers, timeout=300)
                 return request.json()['result']
             except requests.ConnectionError:
                 raise IntelException

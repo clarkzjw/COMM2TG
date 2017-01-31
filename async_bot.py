@@ -187,8 +187,7 @@ def insert_message_to_database(time, id, msg):
 
 
 def main():
-    # global intel
-    logger = logging.getLogger('main')
+    logger = logging.getLogger(__name__)
 
     # Lat & Lng of fetch region
     field = {
@@ -211,7 +210,7 @@ def main():
         except CookieException:
             logger.error(get_time() + ': Fetch Cookie Failed')
             time.sleep(3)
-        except Exception:
+        except:
             logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
             time.sleep(3)
 
@@ -224,7 +223,7 @@ def main():
 
         with open('cookie') as cookies:
             cookies = cookies.read().strip()
-            
+
         # fetch message per time
         while True:
             try:
@@ -232,8 +231,8 @@ def main():
                 result = intel.fetch_msg(mints, maxts, reverse, tab)
                 if result:
                     mints = result[0][1] + 1
-                    break
-            except Exception:
+                break
+            except:
                 logger.error(get_time() + ": Unexpected error: " + str(sys.exc_info()[0]) + " " + str(inspect.currentframe().f_lineno))
                 time.sleep(3)
 
