@@ -9,6 +9,7 @@ if osname == "Linux":
     os.environ['TZ'] = 'Asia/Shanghai'
     time.tzset()
 
+
 class Message(object):
     "Message object"
     def __init__(self, raw_msg):

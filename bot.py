@@ -28,8 +28,8 @@ DBHost = ''
 BlockList = ''
 
 LOG_FILENAME = 'voh.log'
-logging.basicConfig(level = logging.DEBUG,
-                    filename = LOG_FILENAME,
+logging.basicConfig(level=logging.DEBUG,
+                    filename=LOG_FILENAME,
                     filemode='w')
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -76,6 +76,7 @@ def readConfig():
 
     os.environ['TZ'] = 'Asia/Shanghai'
     time.tzset()
+
 
 def fetchCookie():
     global Debug
@@ -149,7 +150,7 @@ def sendMessge(bot, msg):
             req = urllib.request.Request(url, headers={'Content-Type': 'application/x-www-form-urlencoded'})
             resp = urllib.request.urlopen(req)
             data = resp.read()
-
+            logger.info(data)
             logger.info(getTime() + ": sendMsg " + msg)
             break
         except NetworkError:
@@ -176,7 +177,6 @@ def formatMessage(raw):
     msg = ''
     plext = raw[2]['plext']
     markup = plext['markup']
-    #plaintext = plext['text']
 
     for mark in markup:
         if mark[0] == 'SECURE':
@@ -219,6 +219,7 @@ def formatMessage(raw):
 
     return msg
 
+
 def FindRecord(id):
     uri = 'mongodb://' + DBHost
     Conn = MongoClient(uri)
@@ -242,14 +243,15 @@ def insertDB(time, id, msg):
     mycollection.insert(post)
     Conn.close()
 
+
 def main():
     logger = logging.getLogger('main')
 
     field = {
-        'minLngE6':119618783,
-        'minLatE6':29912919,
-        'maxLngE6':121018722,
-        'maxLatE6':30573739,
+        'minLngE6': 119618783,
+        'minLatE6': 29912919,
+        'maxLngE6': 121018722,
+        'maxLatE6': 30573739,
     }
 
     mints = -1
@@ -259,7 +261,7 @@ def main():
 
     while True:
         try:
-           if fetchCookie():
+            if fetchCookie():
                 break
         except CookieException:
             time.sleep(3)
@@ -290,25 +292,27 @@ def main():
                             break
                     except CookieException:
                         time.sleep(3)
+            except Exception:
+                pass
 
         for item in result[::-1]:
             message = ingrex.Message(item)
 
             if message.ptype == 'PLAYER_GENERATED':
-                logger.info(getTime() + str(item))
+                # logger.info(getTime() + str(item))
 
                 msg = formatMessage(item)
                 if msg == 'Blocked':
                     logger.info(getTime() + " " + message.text)
                 else:
                     msg = message.time + " " + msg
-                    logger.info(getTime() + " " + msg)
-                    if FindRecord(message.guid) == False:
+                    # logger.info(getTime() + " " + msg)
+                    if FindRecord(message.guid) is False:
                         insertDB(message.time, message.guid, msg)
-                        sendMonitor(bot, msg)
-                        #sendMessge(bot, msg)
+                        # sendMonitor(bot, msg)
+                        sendMessge(bot, msg)
 
-        time.sleep(5)
+        time.sleep(10)
 
 if __name__ == '__main__':
     readConfig()

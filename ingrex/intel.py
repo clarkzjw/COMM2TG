@@ -2,7 +2,7 @@
 import requests
 import re
 import json
-import os
+
 
 class Intel(object):
     "main class with all Intel functions"
@@ -43,7 +43,7 @@ class Intel(object):
         count = 0
         while count < 3:
             try:
-                request = self.session.post(url, data=json.dumps(payload), headers=self.headers)
+                request = self.session.post(url, data=json.dumps(payload), headers=self.headers, timeout=600)
                 return request.json()['result']
             except requests.ConnectionError:
                 raise IntelError
@@ -132,9 +132,11 @@ class Intel(object):
         }
         return self.fetch(url, payload)
 
+
 class IntelError(BaseException):
     """Intel Error"""
     pass
+
 
 class CookieError(IntelError):
     """Intel Error"""
