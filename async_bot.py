@@ -135,7 +135,7 @@ def send_message(bot, message, monitor=False):
             if monitor is True:
                 bot.sendMessage(chat_id="@voamonitor", text=message)
             else:
-                bot.sendMessage(chat_id=CHANNEL_NAME, text=urllib.parse.quote(message))
+                bot.sendMessage(chat_id=CHANNEL_NAME, text=message)
             logger.info(get_time() + ": sendMsg " + message)
             break
         except telegram.TelegramError:

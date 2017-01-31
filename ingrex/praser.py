@@ -63,4 +63,4 @@ class Message(object):
         else:
             self.msg = '@' + self.msg
 
-        self.msg = self.time + self.msg
+        self.msg = self.time + ' ' + self.msg
