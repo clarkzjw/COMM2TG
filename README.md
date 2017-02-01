@@ -36,9 +36,3 @@ sudo dpkg-reconfigure locales
 ```bash
 python3 bot.py
 ```
-
-## TODO
-
-+ Robust error handle
-
-+ Use GAE OAuth instead of fetching cookie

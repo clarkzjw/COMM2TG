@@ -252,6 +252,6 @@ if __name__ == '__main__':
     while True:
         try:
             main()
-        except Exception as e:
+        except Exception:
             send_message(bot, 'Main Unexpected error' + str(sys.exc_info()[0]) + " Line: " + str(inspect.currentframe().f_lineno), True)
             time.sleep(3)
