@@ -1,4 +1,6 @@
 # COMM2TG
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG?ref=badge_shield)
+
 
 A bot that catches Ingress comm messages and forwardes them to Telegram channel.
 
@@ -36,3 +38,7 @@ sudo dpkg-reconfigure locales
 ```bash
 python3 bot.py
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG?ref=badge_large)
