@@ -1,4 +1,4 @@
-# COMM2TG
+# [Deprecated] COMM2TG
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fclarkzjw%2FCOMM2TG?ref=badge_shield)
 
 
